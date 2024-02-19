@@ -26,27 +26,35 @@ int main() {
         t = 256;
     }
 
-    Entry *entries = calloc(t, sizeof(Entry));
+    Entry entries[t];
 
-    unsigned char byte[4];
+
 
     for (int i = 0; i < t; ++i) {
+        unsigned char byte[3];
+        Entry entry;
+
         for (int j = 0; j < 3; ++j) {
             int value;
             scanf("%x", &value);
             byte[j] = (unsigned char) value;
         }
-        entries[i].character = byte[0];
-        entries[i].length = (byte[1] & 0xf0) >> 4;
-        entries[i].encoding = (unsigned int) (byte[1] & 0x0f);
-        entries[i].encoding = (entries[i].encoding << 8) | (unsigned int) (byte[2]);
-        entries[i].encoding = entries[i].encoding >> (int) (12 - (int) entries[i].length);
+
+        entry.character = byte[0];
+        entry.length = (byte[1] & 0xf0) >> 4;
+        entry.encoding = (unsigned int) (byte[1] & 0x0f);
+        entry.encoding = (entry.encoding << 8) | (unsigned int) (byte[2]);
+        entry.encoding = entry.encoding >> (int) (12 - (int) entry.length);
+
+        entries[i] = entry;
     }
 
     unsigned long int n;
     for (int j = 0; j < 4; ++j) {
-        int value;
+        unsigned int value;
+
         scanf("%x", &value);
+
         if (j == 0) {
             n = value;
         } else {
@@ -56,36 +64,43 @@ int main() {
     }
 
     if (n > 0) {
-        int count = (int) n;
-        int value;
-        unsigned int d;
-        int flag = 0;
-        int j = 7;
+        int count = 0, flag = 0, len = 0, j = 7;
+
+        unsigned int value, d;
 
         scanf("%x", &value);
-        d = (value >> j--) & 1;
 
-        while (1) {
+        while (count < (int)n) {
+
+            if(j < 0){
+                scanf("%x", &value);
+                j = 7;
+            }
+            if( len <= 12){
+                if(len == 0){
+                    d = bitmap_test(value,j--);
+                    ++len;
+                }else{
+                    d  = d << 1;
+                    d |= bitmap_test(value,j--);
+                    ++len;
+                }
+            }
+
             for (int i = 0; i < t; ++i) {
-                if (d == entries[i].encoding) {
-                    printf("%c", entries[i].character);
+                Entry entry = entries[i];
+
+                if ( len == entry.length && d == entry.encoding) {
+                    printf("%c", entry.character);
+                    count++;
                     flag = 1;
-                    count--;
                     break;
                 }
             }
-            if (flag == 1) {
-                d = (value >> j--) & 1;
-            } else {
-                d = (d << 1) | (value > j--);
-            }
-            if (count > 0) {
-                if (j < 0) {
-                    j = 7;
-                    scanf("%x", &value);
-                }
-            } else {
-                break;
+            if (flag) {
+                flag = 0;
+                d = d & 0x0;
+                len = 0;
             }
         }
 
@@ -98,6 +113,5 @@ int main() {
             printf("\n");
         }
     }
-
     return 0;
 }
